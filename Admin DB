@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedCare Pro | Command Nexus</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+    <style>
+        :root { 
+            --glass-bg: rgba(255, 255, 255, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            --primary: #2d3436; 
+            --accent: #0984e3;
+            --success: #00b894; 
+            --danger: #d63031; 
+            --text-main: #2d3436;
+            --text-light: #636e72;
+            --font-main: 'Exo 2', sans-serif;
+            --font-tech: 'Rajdhani', sans-serif;
+        }
+        
+        * { box-sizing: border-box; outline: none; text-decoration: none; user-select: none; }
+        
+        body { 
+            font-family: var(--font-main);
+            background: url('https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=2070&auto=format&fit=crop') no-repeat center center fixed;
+            background-size: cover;
+            margin: 0; padding: 0; 
+            display: flex; height: 100vh; overflow: hidden;
+            color: var(--text-main);
+        }
+
+        /* Overlay to darken background slightly for readability */
+        body::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(223, 230, 233, 0.4); 
+            backdrop-filter: blur(8px);
+            z-index: -1;
+        }
+
+        /* === GLASS MIXIN === */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            border-radius: 24px;
+        }
+
+        /* === LOGIN SCREEN === */
+        #login-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(15px);
+            z-index: 9999; display: flex; justify-content: center; align-items: center;
+        }
+        .login-card { 
+            padding: 60px 40px; width: 100%; max-width: 450px; text-align: center; 
+            border-top: 5px solid var(--accent);
+        }
+        .login-input { 
+            width: 100%; padding: 18px; margin-bottom: 20px; border: 1px solid rgba(0,0,0,0.1); 
+            border-radius: 12px; font-size: 1rem; transition: 0.3s; background: rgba(255,255,255,0.8);
+            font-family: var(--font-tech); letter-spacing: 1px;
+        }
+        .login-input:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 15px rgba(9, 132, 227, 0.2); }
+        .login-btn { 
+            width: 100%; padding: 18px; background: var(--accent); color: white; border: none; 
+            border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; font-size: 1.1rem;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .login-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(9, 132, 227, 0.4); }
+
+        /* === LAYOUT === */
+        .app-container { display: flex; width: 100%; height: 100%; padding: 20px; gap: 20px; }
+        
+        /* SIDEBAR (Floating Dock Style) */
+        .sidebar { 
+            width: 260px; height: 100%; display: flex; flex-direction: column; 
+            padding: 30px 20px; z-index: 10;
+        }
+        .logo-section { 
+            font-family: var(--font-tech); font-size: 2rem; font-weight: 700; color: var(--accent); 
+            display: flex; align-items: center; gap: 10px; margin-bottom: 50px; text-shadow: 0 2px 10px rgba(255,255,255,0.5);
+        }
+        
+        .menu-list { list-style: none; padding: 0; margin: 0; flex: 1; }
+        .menu-item { margin-bottom: 15px; }
+        .menu-link { 
+            display: flex; align-items: center; gap: 15px; padding: 18px 25px; 
+            color: var(--text-light); border-radius: 18px; font-weight: 600; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer; 
+            position: relative; overflow: hidden;
+        }
+        .menu-link:hover { background: rgba(255,255,255,0.5); color: var(--accent); transform: translateX(5px); }
+        .menu-link.active { 
+            background: linear-gradient(135deg, var(--accent) 0%, #74b9ff 100%); 
+            color: white; box-shadow: 0 10px 25px rgba(9, 132, 227, 0.3);
+        }
+        
+        /* MAIN AREA */
+        .main-content { 
+            flex: 1; display: flex; flex-direction: column; overflow-y: auto; position: relative; 
+            padding-right: 10px; /* scrollbar space */
+        }
+        
+        /* HEADER */
+        .top-header { 
+            padding: 10px 30px; margin-bottom: 30px;
+            display: flex; justify-content: space-between; align-items: center; 
+        }
+
+        .user-profile {
+            display: flex; align-items: center; gap: 15px; 
+            background: rgba(255,255,255,0.9); padding: 10px 15px 10px 25px; border-radius: 50px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        .role-badge { 
+            font-family: var(--font-tech); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px;
+            background: var(--text-main); color: #fff; padding: 4px 10px; border-radius: 6px;
+        }
+        
+        /* CLOCK WIDGET */
+        .live-clock {
+            font-family: var(--font-tech); font-size: 1.8rem; font-weight: 700; color: var(--text-main);
+            display: flex; align-items: center; gap: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .date-small { font-size: 0.9rem; color: var(--text-light); font-weight: 500; font-family: var(--font-main); }
+
+        /* DASHBOARD CONTENT */
+        .view-section { display: none; animation: fadeIn 0.6s ease; }
+        .view-section.active-view { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* STATS CARDS */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 25px; margin-bottom: 30px; }
+        .stat-card { 
+            padding: 25px; position: relative; overflow: hidden; color: white; border: none;
+            transition: transform 0.3s;
+        }
+        .stat-card:hover { transform: translateY(-5px) scale(1.02); }
+        .stat-card::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+            transform: rotate(45deg); pointer-events: none;
+        }
+        .card-1 { background: linear-gradient(135deg, #6c5ce7, #a29bfe); }
+        .card-2 { background: linear-gradient(135deg, #0984e3, #74b9ff); }
+        .card-3 { background: linear-gradient(135deg, #00b894, #55efc4); }
+        .card-4 { background: linear-gradient(135deg, #d63031, #ff7675); }
+
+        .stat-value { font-family: var(--font-tech); font-size: 3rem; margin: 5px 0; font-weight: 700; }
+        .stat-label { font-size: 0.9rem; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* PATIENT QUEUE LIST */
+        .queue-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .patient-row {
+            background: rgba(255,255,255,0.6); padding: 20px; margin-bottom: 15px; border-radius: 16px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-left: 5px solid transparent; transition: 0.3s;
+        }
+        .patient-row:hover { background: rgba(255,255,255,0.95); transform: scale(1.01); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        
+        .status-pending { border-left-color: #fdcb6e; }
+        .status-confirmed { border-left-color: #00b894; }
+        .status-rejected { border-left-color: #d63031; }
+
+        /* BUTTONS */
+        .btn-modern {
+            border: none; padding: 10px 20px; border-radius: 10px; font-weight: 600; cursor: pointer;
+            transition: 0.2s; display: flex; align-items: center; gap: 8px; font-size: 0.9rem;
+        }
+        .btn-approve { background: #e3f9e5; color: #219653; } .btn-approve:hover { background: #219653; color: white; }
+        .btn-reject { background: #ffebeb; color: #eb5757; } .btn-reject:hover { background: #eb5757; color: white; }
+        .btn-trash { background: transparent; color: #b2bec3; font-size: 1.1rem; } .btn-trash:hover { color: #d63031; }
+
+        /* BILLING SECTION */
+        .billing-split { display: grid; grid-template-columns: 1fr 1.2fr; gap: 30px; height: 100%; }
+        .bill-form-group { margin-bottom: 15px; }
+        .bill-input { 
+            width: 100%; padding: 12px; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; 
+            background: rgba(255,255,255,0.5); font-family: inherit;
+        }
+        .bill-total-area {
+            margin-top: 20px; padding: 20px; background: linear-gradient(135deg, #2d3436, #000); 
+            color: white; border-radius: 15px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .rupee-symbol { font-family: sans-serif; }
+
+        /* TOAST */
+        #toast { 
+            visibility: hidden; min-width: 320px; background: rgba(0,0,0,0.85); color: #fff; text-align: center; 
+            border-radius: 50px; padding: 16px; position: fixed; z-index: 10000; left: 50%; bottom: 30px; 
+            transform: translateX(-50%); backdrop-filter: blur(5px);
+            font-family: var(--font-tech); font-size: 1.1rem; letter-spacing: 0.5px;
+        }
+        #toast.show { visibility: visible; animation: fadeUp 0.5s, fadeDown 0.5s 3s forwards; }
+        @keyframes fadeUp { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
+        @keyframes fadeDown { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
+
+    </style>
+</head>
+<body>
+
+<div id="login-screen">
+    <div class="glass-panel login-card">
+        <div style="font-size: 3rem; color: var(--accent); margin-bottom: 10px;"><i class="fa-solid fa-dna"></i></div>
+        <h2 style="font-family: var(--font-tech); text-transform: uppercase; letter-spacing: 2px; margin: 0;">MedCare PRO</h2>
+        <p style="color: #636e72; margin-bottom: 30px; font-size: 0.9rem;">Secure Admin Access Point</p>
+        
+        <div id="login-error" style="color:#d63031; display:none; margin-bottom:15px; font-weight:600;">Invalid Credentials</div>
+        
+        <form onsubmit="checkLogin(event)">
+            <input type="text" id="admin-id" class="login-input" placeholder="ACCESS ID" required>
+            <input type="password" id="admin-pass" class="login-input" placeholder="PASSKEY" required>
+            <button type="submit" class="login-btn">Initialize System <i class="fa-solid fa-chevron-right"></i></button>
+        </form>
+    </div>
+</div>
+
+<div id="dashboard-view" class="app-container" style="display:none;">
+    
+    <aside class="glass-panel sidebar">
+        <div class="logo-section">
+            <i class="fa-solid fa-heart-pulse"></i> MEDCARE
+        </div>
+        <ul class="menu-list">
+            <li class="menu-item"><a class="menu-link active" onclick="switchView('view-dashboard', this)"><i class="fa-solid fa-chart-pie"></i> Command Center</a></li>
+            <li class="menu-item"><a class="menu-link" onclick="switchView('view-appointments', this)"><i class="fa-regular fa-calendar-check"></i> Appointments</a></li>
+            <li class="menu-item"><a class="menu-link" onclick="switchView('view-patients', this)"><i class="fa-solid fa-users"></i> Patient DB</a></li>
+            <li class="menu-item"><a class="menu-link" onclick="switchView('view-billing', this)"><i class="fa-solid fa-wallet"></i> Finance & Bill</a></li>
+        </ul>
+        <button onclick="location.reload()" class="menu-link" style="color: #d63031; justify-content: center; background: rgba(214, 48, 49, 0.1);">
+            <i class="fa-solid fa-power-off"></i> Terminate
+        </button>
+    </aside>
+
+    <main class="main-content">
+        
+        <header class="top-header glass-panel" style="padding: 15px 30px; border-radius: 20px;">
+            <div class="live-clock">
+                <i class="fa-regular fa-clock" style="color:var(--accent);"></i>
+                <div style="display:flex; flex-direction:column; line-height:1;">
+                    <span id="clock-time">00:00:00</span>
+                    <span id="clock-date" class="date-small">Loading...</span>
+                </div>
+            </div>
+            
+            <div class="user-profile">
+                <div style="text-align: right;">
+                    <div style="font-weight: 700; color: var(--primary);">Officer Medcare</div>
+                    <div class="role-badge">ID : IPLTKN</div>
+                </div>
+                <img src="https://m.media-amazon.com/images/I/51gOHo4+WeL._AC_UF1000,1000_QL80_.jpg" alt="Officer" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent); background: #eee;">
+                </div>
+        </header>
+
+        <div id="view-dashboard" class="view-section active-view">
+            <div class="stats-grid">
+                <div class="glass-panel stat-card card-1">
+                    <div class="stat-label">Total Requests</div>
+                    <div class="stat-value" id="count-total">0</div>
+                    <i class="fa-solid fa-server" style="position:absolute; right:15px; bottom:15px; opacity:0.3; font-size:3rem;"></i>
+                </div>
+                <div class="glass-panel stat-card card-2">
+                    <div class="stat-label">Action Pending</div>
+                    <div class="stat-value" id="count-pending">0</div>
+                    <i class="fa-regular fa-hourglass" style="position:absolute; right:15px; bottom:15px; opacity:0.3; font-size:3rem;"></i>
+                </div>
+                <div class="glass-panel stat-card card-3">
+                    <div class="stat-label">Confirmed</div>
+                    <div class="stat-value" id="count-confirmed">0</div>
+                    <i class="fa-solid fa-check-double" style="position:absolute; right:15px; bottom:15px; opacity:0.3; font-size:3rem;"></i>
+                </div>
+                <div class="glass-panel stat-card card-4">
+                    <div class="stat-label">Rejected</div>
+                    <div class="stat-value" id="count-rejected">0</div>
+                    <i class="fa-solid fa-ban" style="position:absolute; right:15px; bottom:15px; opacity:0.3; font-size:3rem;"></i>
+                </div>
+            </div>
+
+            <div class="glass-panel" style="padding: 30px;">
+                <div class="queue-header">
+                    <h3 style="margin:0; font-family:var(--font-tech); text-transform:uppercase; letter-spacing:1px;">Recent Inquiries</h3>
+                    <button onclick="App.render()" style="border:none; background:var(--accent); color:white; padding:8px 15px; border-radius:8px; cursor:pointer;"><i class="fa-solid fa-rotate"></i> Sync</button>
+                </div>
+                <div id="queue-container"></div>
+            </div>
+        </div>
+
+        <div id="view-appointments" class="view-section">
+            <div class="glass-panel" style="padding:30px;">
+                <h3 style="margin-top:0;">Appointment Logs</h3>
+                <table style="width:100%; border-collapse:collapse; margin-top:15px;">
+                    <thead style="border-bottom:2px solid rgba(0,0,0,0.1); font-family:var(--font-tech); color:var(--text-light);">
+                        <tr>
+                            <th style="padding:15px; text-align:left;">Date & Time</th>
+                            <th style="padding:15px; text-align:left;">Patient Name</th>
+                            <th style="padding:15px; text-align:left;">Purpose</th>
+                            <th style="padding:15px; text-align:left;">Current Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="appt-table-body" style="font-size:0.95rem;"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="view-patients" class="view-section">
+            <div class="glass-panel" style="padding:30px;">
+                <h3 style="margin-top:0;">Registered Database</h3>
+                <div id="patient-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:20px; margin-top:20px;"></div>
+            </div>
+        </div>
+
+        <div id="view-billing" class="view-section" style="height: calc(100vh - 140px);">
+            <div class="billing-split">
+                <div class="glass-panel" style="padding:30px;">
+                    <h3><i class="fa-solid fa-file-invoice"></i> Create Invoice</h3>
+                    <div class="bill-form-group">
+                        <label style="font-size:0.85rem; font-weight:700; color:var(--text-light);">SELECT PATIENT</label>
+                        <select id="bill-patient-select" class="bill-input" onchange="Billing.fillPatient()"><option value="">-- Search Database --</option></select>
+                    </div>
+                    <div class="bill-form-group">
+                        <input type="text" id="bill-name" class="bill-input" placeholder="Patient Name" readonly>
+                    </div>
+                    <div class="bill-form-group">
+                        <input type="email" id="bill-email" class="bill-input" placeholder="Email Address" readonly>
+                    </div>
+                    <div class="bill-form-group">
+                        <label style="font-size:0.85rem; font-weight:700; color:var(--text-light);">DATE</label>
+                        <input type="date" id="bill-date" class="bill-input">
+                    </div>
+                    <div class="bill-form-group">
+                        <label style="font-size:0.85rem; font-weight:700; color:var(--text-light);">PAYMENT MODE</label>
+                        <select id="bill-payment-method" class="bill-input">
+                            <option>Cash</option><option>Credit Card</option><option>UPI (GPay/PhonePe)</option><option>Insurance</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="glass-panel" style="padding:30px; display:flex; flex-direction:column;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <h3>Services Rendered</h3>
+                        <button onclick="Billing.addItem()" style="background:var(--accent); color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer;">+ Add Item</button>
+                    </div>
+                    
+                    <div style="flex:1; overflow-y:auto;">
+                        <table style="width:100%; border-collapse:collapse;">
+                            <tbody id="invoice-body"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="bill-total-area">
+                        <span style="font-family:var(--font-tech); font-size:1.2rem; text-transform:uppercase;">Grand Total</span>
+                        <span id="bill-total" style="font-family:var(--font-tech); font-size:2rem; font-weight:700;"><span class="rupee-symbol">₹</span> 0.00</span>
+                    </div>
+
+                    <button onclick="Billing.processPayment()" style="width:100%; margin-top:20px; padding:15px; background:var(--success); color:white; border:none; border-radius:12px; font-weight:700; font-size:1.1rem; cursor:pointer; box-shadow:0 5px 15px rgba(0, 184, 148, 0.4);">
+                        Generate Invoice & Email <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<div id="toast"><i class="fa-solid fa-satellite-dish"></i> Data Transmitted</div>
+
+<script>
+    // === AUTH & CONFIGURATION ===
+    const AUTH = { ID: "Prajwal8792", PASS: "Prajwal8792" }; // Credentials maintained
+    
+    const CONFIG = { 
+        KEY: "P2vhCAZk6PQtBsS2v",       
+        SERVICE: "service_k5gh8na",     
+        TEMPLATE_CONFIRM: "template_le3hm0l", 
+        TEMPLATE_REJECT: "template_twpys4e",  
+        TEMPLATE_BILLING: "template_0zagvfi"  
+    };
+
+    // === CLOCK FUNCTION ===
+    function startClock() {
+        const update = () => {
+            const now = new Date();
+            document.getElementById('clock-time').innerText = now.toLocaleTimeString('en-US', { hour12: true });
+            document.getElementById('clock-date').innerText = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+        };
+        update();
+        setInterval(update, 1000);
+    }
+
+    // === LOGIN & NAVIGATION ===
+    function checkLogin(e) {
+        e.preventDefault();
+        const idInput = document.getElementById('admin-id').value;
+        const passInput = document.getElementById('admin-pass').value;
+
+        if(idInput === AUTH.ID && passInput === AUTH.PASS) {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('dashboard-view').style.display = 'flex';
+            startClock();
+            App.init(); 
+            Billing.init();
+        } else { 
+            document.getElementById('login-error').style.display = 'block'; 
+        }
+    }
+
+    function switchView(viewId, link) {
+        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active-view'));
+        document.getElementById(viewId).classList.add('active-view');
+        
+        document.querySelectorAll('.menu-link').forEach(el => el.classList.remove('active'));
+        if(link) link.classList.add('active');
+        
+        if(viewId === 'view-billing') Billing.populateSelect();
+        if(viewId === 'view-appointments') App.renderAppointmentsTable();
+        if(viewId === 'view-patients') App.renderPatientsGrid();
+    }
+
+    // === MAIN LOGIC ===
+    const App = {
+        data: [],
+        init: function() {
+            try { emailjs.init({ publicKey: CONFIG.KEY }); } catch(e) {}
+            this.loadData();
+            // Auto-refresh simulation (polling)
+            setInterval(() => { 
+                if (localStorage.getItem('medcare_db_v3') !== JSON.stringify(this.data)) this.loadData(); 
+            }, 3000);
+        },
+        loadData: function() {
+            const saved = localStorage.getItem('medcare_db_v3');
+            if (saved) { 
+                this.data = JSON.parse(saved); 
+                this.updateStats(); 
+                this.render(); 
+                this.renderAppointmentsTable();
+                this.renderPatientsGrid();
+            }
+        },
+        updateStats: function() {
+            document.getElementById('count-total').innerText = this.data.length;
+            document.getElementById('count-confirmed').innerText = this.data.filter(i => i.status === 'confirmed').length;
+            document.getElementById('count-pending').innerText = this.data.filter(i => i.status === 'pending').length;
+            document.getElementById('count-rejected').innerText = this.data.filter(i => i.status === 'rejected').length;
+        },
+        
+        render: function() {
+            const container = document.getElementById('queue-container'); 
+            container.innerHTML = '';
+            
+            if (this.data.length === 0) { 
+                container.innerHTML = `<div style="text-align:center; padding:40px; color:#b2bec3; font-style:italic;">No active requests in database.</div>`; 
+                return; 
+            }
+            
+            // Sort: Pending first
+            const sortedData = [...this.data].sort((a,b) => (a.status === 'pending' ? -1 : 1));
+
+            sortedData.forEach(item => {
+                const div = document.createElement('div');
+                div.className = `patient-row status-${item.status}`;
+                
+                let controls = '';
+                if(item.status === 'pending') {
+                    controls = `
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn-modern btn-approve" onclick="App.process(${item.id}, 'approve', this)"><i class="fa-solid fa-check"></i> Accept</button>
+                            <button class="btn-modern btn-reject" onclick="App.process(${item.id}, 'reject', this)"><i class="fa-solid fa-xmark"></i> Deny</button>
+                            <button class="btn-modern btn-trash" onclick="App.deleteItem(${item.id})"><i class="fa-solid fa-trash"></i></button>
+                        </div>`;
+                } else {
+                    let color = item.status === 'confirmed' ? 'var(--success)' : 'var(--danger)';
+                    controls = `
+                        <div style="display:flex; gap:15px; align-items:center;">
+                            <span style="color:${color}; font-weight:700; text-transform:uppercase; font-size:0.85rem; letter-spacing:1px;">${item.status}</span>
+                            <button class="btn-modern btn-trash" onclick="App.deleteItem(${item.id})"><i class="fa-solid fa-trash"></i></button>
+                        </div>`;
+                }
+
+                div.innerHTML = `
+                    <div>
+                        <div style="font-weight:700; font-size:1.1rem; color:var(--text-main);">${item.name}</div>
+                        <div style="font-size:0.9rem; color:var(--text-light); margin-top:4px;">
+                            <i class="fa-regular fa-clock"></i> ${item.date} @ ${item.time} <span style="margin:0 8px;">|</span> ${item.reason}
+                        </div>
+                    </div>
+                    ${controls}`;
+                container.appendChild(div);
+            });
+        },
+        
+        deleteItem: function(id) {
+            if(!confirm("CONFIRM DELETION: Remove this record permanently?")) return;
+            this.data = this.data.filter(item => item.id !== id);
+            this.save(); this.updateStats(); this.render();
+        },
+
+        process: function(id, action, btnElement) {
+            const item = this.data.find(x => x.id === id); if (!item) return;
+            const originalContent = btnElement.innerHTML;
+            btnElement.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i>`;
+            
+            let templateId = action === 'approve' ? CONFIG.TEMPLATE_CONFIRM : CONFIG.TEMPLATE_REJECT;
+            let statusLabel = action === 'approve' ? "confirmed" : "rejected";
+
+            const params = { 
+                to_email: item.email, 
+                patient_name: item.name, 
+                date: item.date, 
+                time: item.time, 
+                reason: item.reason, 
+                email_message: `Status Update: ${statusLabel.toUpperCase()}` 
+            };
+
+            emailjs.send(CONFIG.SERVICE, templateId, params)
+                .then(() => {
+                    item.status = statusLabel; 
+                    this.save(); this.updateStats(); this.render();
+                    showToast(`Request ${statusLabel.toUpperCase()}`);
+                })
+                .catch((e) => { 
+                    alert("Transmission Error: " + JSON.stringify(e)); 
+                    btnElement.innerHTML = originalContent; 
+                });
+        },
+        save: function() { localStorage.setItem('medcare_db_v3', JSON.stringify(this.data)); },
+        
+        renderAppointmentsTable: function() {
+            const tbody = document.getElementById('appt-table-body'); tbody.innerHTML = '';
+            this.data.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = "1px solid rgba(0,0,0,0.05)";
+                let color = item.status === 'confirmed' ? 'var(--success)' : (item.status === 'rejected' ? 'var(--danger)' : '#fdcb6e');
+                tr.innerHTML = `<td style="padding:15px;">${item.date}<br><span style="font-size:0.8rem; color:gray;">${item.time}</span></td>
+                                <td style="padding:15px;"><strong>${item.name}</strong><br><span style="font-size:0.8rem; color:gray;">${item.email}</span></td>
+                                <td style="padding:15px;">${item.reason}</td>
+                                <td style="padding:15px;"><span style="color:${color}; font-weight:700; text-transform:uppercase; font-size:0.8rem;">${item.status}</span></td>`;
+                tbody.appendChild(tr);
+            });
+        },
+        renderPatientsGrid: function() {
+            const container = document.getElementById('patient-grid'); container.innerHTML = '';
+            const unique = {}; this.data.forEach(i => unique[i.email] = i);
+            Object.values(unique).forEach(p => {
+                const d = document.createElement('div');
+                d.className = "glass-panel";
+                d.style.cssText = "padding:20px; text-align:center; transition:0.3s; cursor:pointer;";
+                d.onmouseover = function() { this.style.transform = "translateY(-5px)"; };
+                d.onmouseout = function() { this.style.transform = "translateY(0)"; };
+                
+                d.innerHTML = `<div style="width:50px; height:50px; background:linear-gradient(135deg, #a29bfe, #6c5ce7); border-radius:50%; margin:0 auto 10px; display:flex; align-items:center; justify-content:center; color:white;"><i class="fa-solid fa-user"></i></div>
+                <h4 style="margin:0 0 5px 0;">${p.name}</h4><p style="color:var(--text-light); margin:0; font-size:0.8rem;">${p.email}</p>`;
+                container.appendChild(d);
+            });
+        }
+    };
+
+    // === BILLING LOGIC ===
+    const Billing = {
+        init: function() { 
+            document.getElementById('bill-date').valueAsDate = new Date(); 
+            this.addItem(); 
+        },
+        populateSelect: function() {
+            const select = document.getElementById('bill-patient-select'); 
+            select.innerHTML = '<option value="">-- Search Database --</option>';
+            // Unique patients only
+            const unique = {}; App.data.forEach(i => unique[i.email] = i);
+            Object.values(unique).forEach(p => { 
+                let opt = document.createElement('option'); 
+                opt.value = p.id; 
+                opt.innerText = p.name; 
+                select.appendChild(opt); 
+            });
+        },
+        fillPatient: function() {
+            const val = document.getElementById('bill-patient-select').value;
+            if(!val) return;
+            const p = App.data.find(x => x.id == val);
+            if(p) { 
+                document.getElementById('bill-name').value = p.name; 
+                document.getElementById('bill-email').value = p.email; 
+            }
+        },
+        addItem: function() {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td style="padding:5px 5px 5px 0;"><input type="text" class="bill-input item-desc" placeholder="Service Description"></td>
+                            <td style="padding:5px 0 5px 5px; width:100px;"><input type="number" class="bill-input item-cost" placeholder="0" oninput="Billing.calcTotal()"></td>`;
+            document.getElementById('invoice-body').appendChild(tr);
+        },
+        calcTotal: function() {
+            let total = 0; 
+            document.querySelectorAll('.item-cost').forEach(i => total += parseFloat(i.value||0));
+            document.getElementById('bill-total').innerHTML = `<span class="rupee-symbol">₹</span> ${total.toFixed(2)}`; 
+            return total.toFixed(2);
+        },
+        processPayment: function() {
+            const email = document.getElementById('bill-email').value;
+            const total = this.calcTotal();
+            if(!email || total == 0) return alert("Error: Missing patient details or bill amount.");
+            
+            showToast("Generating Invoice...");
+            
+            let html = ""; 
+            document.querySelectorAll('#invoice-body tr').forEach(tr => { 
+                html += `<tr><td>${tr.querySelector('.item-desc').value}</td><td>₹ ${tr.querySelector('.item-cost').value}</td></tr>`; 
+            });
+            
+            const params = { 
+                to_email: email, 
+                patient_name: document.getElementById('bill-name').value, 
+                date: document.getElementById('bill-date').value, 
+                payment_method: document.getElementById('bill-payment-method').value, 
+                invoice_items_html: html, 
+                total_amount: "₹ " + total 
+            };
+            
+            emailjs.send(CONFIG.SERVICE, CONFIG.TEMPLATE_BILLING, params)
+                .then(() => { showToast("Invoice Sent Successfully"); })
+                .catch((e) => { alert("Failed: " + JSON.stringify(e)); });
+        }
+    };
+
+    function showToast(msg) {
+        const x = document.getElementById("toast");
+        x.innerHTML = `<i class="fa-solid fa-satellite-dish"></i> ${msg}`;
+        x.className = "show";
+        setTimeout(() => { x.className = x.className.replace("show", ""); }, 3000);
+    }
+</script>
+
+</body>
+</html>
